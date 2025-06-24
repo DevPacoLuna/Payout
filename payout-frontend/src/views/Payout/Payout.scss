@@ -65,3 +65,17 @@
     }
   }
 }
+
+.payout-average-performance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 24px 0;
+  text-align: center;
+  color: #4a5568;
+
+  .payout-performance-chart {
+    width: 300px !important;
+    height: 300px !important;
+  }
+}
