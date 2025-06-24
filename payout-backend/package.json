@@ -7,6 +7,8 @@
     "start": "node index.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.54.0",
+    "@mistralai/mistralai": "^1.7.2",
     "axios": "^1.10.0",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
@@ -14,6 +16,8 @@
     "express": "^5.1.0",
     "fs": "^0.0.1-security",
     "path": "^0.12.7",
-    "xlsx": "^0.18.5"
+    "pdf-parse": "^1.1.1",
+    "xlsx": "^0.18.5",
+    "zod": "^3.25.67"
   }
 }
