@@ -6,7 +6,11 @@ import { postPayout } from "../../services/payout";
 export const Payout = () => {
   const fetchPayouts = async (values: PayoutForm) => {
     const response = await postPayout(values);
-    console.log("Payouts fetched:", response);
+    if (response.status === 201) {
+      alert("Payouts fetched successfully!");
+    } else {
+      alert("Failed to fetch payouts. Please try again.");
+    }
   };
 
   const formikPayout = useFormik<PayoutForm>({

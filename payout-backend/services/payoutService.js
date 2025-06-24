@@ -63,7 +63,7 @@ const modifyDBExcel = (aiResponse, excelFilePath, trackingNumber, data) => {
 
   let aiResult;
   try {
-    aiResult = JSON.parse(aiResponse);
+    aiResult = JSON.parse(aiResponse.match(/{[\s\S]*}/)[0]);
   } catch (err) {
     return {
       status: 500,
@@ -100,9 +100,8 @@ const processDataFromPDFs = async (allPdfTexts, foundRow) => {
     .map(([key, value]) => `${key}: ${value}`)
     .join("\n");
   const prompt = `
-   You are an expert payout processor. Given the following Excel row and PDF contents, determine the amount to payout.
-   Respond ONLY with a object like this: '{"amount": <number>, "reason": "<short explanation>"}'
-   Do not include any explanations or extra text.
+   You are an expert payout processor and you ONLY respond in JSON format like this: {"amount": <number>, "reason": "<short explanation>"}.
+   Given the following Excel row and PDF contents, determine the amount to payout.
    
    Excel Row:
    ${excelColumns}
@@ -119,6 +118,7 @@ const processDataFromPDFs = async (allPdfTexts, foundRow) => {
       },
     ],
   });
+  console.log("AI Response:", completion.choices[0].message.content);
 
   return completion.choices[0].message.content;
 };
