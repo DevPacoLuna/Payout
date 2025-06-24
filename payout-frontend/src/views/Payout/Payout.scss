@@ -1,0 +1,70 @@
+.payout-container {
+  max-width: 400px;
+  margin: 40px auto;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: #fff;
+
+  .payout-title {
+    text-align: center;
+    margin-bottom: 24px;
+    color: #2d3748;
+  }
+
+  .payout-input-group {
+    margin-bottom: 18px;
+
+    .payout-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #4a5568;
+    }
+
+    .payout-input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 16px;
+      outline: none;
+      box-sizing: border-box;
+    }
+  }
+
+  .payout-input-group-docs {
+    margin-bottom: 24px;
+
+    .payout-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #4a5568;
+    }
+
+    .payout-input-file {
+      width: 100%;
+      padding: 6px 0;
+      font-size: 15px;
+      border: none;
+      background: none;
+    }
+  }
+
+  .payout-submit-button {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: none;
+    background-color: #2b6cb0;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+
+    &:hover {
+      background-color: #2c5282;
+    }
+  }
+}
