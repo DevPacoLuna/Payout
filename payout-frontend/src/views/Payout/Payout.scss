@@ -22,33 +22,30 @@
       color: #4a5568;
     }
 
-    .payout-input {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-      font-size: 16px;
-      outline: none;
-      box-sizing: border-box;
-    }
-  }
-
-  .payout-input-group-docs {
-    margin-bottom: 24px;
-
-    .payout-label {
+    .payout-error-label {
       display: block;
-      margin-bottom: 6px;
-      font-weight: 500;
-      color: #4a5568;
+      margin-top: 4px;
+      color: #e53e3e;
+      font-size: 14px;
     }
 
-    .payout-input-file {
-      width: 100%;
-      padding: 6px 0;
-      font-size: 15px;
-      border: none;
-      background: none;
+    .payout-input-range {
+      display: flex;
+      gap: 8px;
+
+      .payout-input-range-separator {
+        align-self: center;
+      }
+
+      .payout-input {
+        width: 100%;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        font-size: 16px;
+        outline: none;
+        box-sizing: border-box;
+      }
     }
   }
 

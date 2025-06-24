@@ -1,45 +1,72 @@
-import { FormEvent, useState } from "react";
 import "./Payout.scss";
+import { useFormik } from "formik";
+import { PayoutForm, payoutSchema } from "./form";
+import { postPayout } from "../../services/payout";
 
 export const Payout = () => {
-  const [trackingNumber, setTrackingNumber] = useState("");
-  const [docs, setDocs] = useState<FileList | null>(null);
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    console.log("Tracking Number:", trackingNumber);
-    console.log("Docs:", docs);
+  const fetchPayouts = async (values: PayoutForm) => {
+    const response = await postPayout(values);
+    console.log("Payouts fetched:", response);
   };
+
+  const formikPayout = useFormik<PayoutForm>({
+    initialValues: {
+      startTrackingNumber: 0,
+      endTrackingNumber: 0,
+    },
+    validationSchema: payoutSchema,
+    onSubmit: fetchPayouts,
+  });
 
   return (
     <div className="payout-container">
       <h2 className="payout-title">Payout Calculation</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="payout-input-group">
-          <label className="payout-label">Tracking Number:</label>
+      <div className="payout-input-group">
+        <label className="payout-label">Tracking Number Range:</label>
+        <div className="payout-input-range">
           <input
             type="text"
-            value={trackingNumber}
-            onChange={(e) => setTrackingNumber(e.target.value)}
+            value={formikPayout.values.startTrackingNumber}
+            onChange={(e) =>
+              formikPayout.setFieldValue("startTrackingNumber", e.target.value)
+            }
             required
             className="payout-input"
-            placeholder="Enter tracking number"
+            placeholder="Start number"
+            name="startTrackingNumber"
           />
-        </div>
-        <div className="payout-input-group-docs">
-          <label className="payout-label">Documents to Analyze:</label>
+          <span className="payout-input-range-separator">to</span>
           <input
-            type="file"
-            multiple
-            onChange={(e) => setDocs(e.target.files)}
+            type="text"
+            value={formikPayout.values.endTrackingNumber}
+            onChange={(e) =>
+              formikPayout.setFieldValue("endTrackingNumber", e.target.value)
+            }
             required
-            className="payout-input-file"
+            className="payout-input"
+            placeholder="End number"
+            name="endTrackingNumber"
           />
         </div>
-        <button type="submit" className="payout-submit-button">
-          Send
-        </button>
-      </form>
+        {formikPayout.touched.startTrackingNumber &&
+          formikPayout.errors.startTrackingNumber && (
+            <div className="payout-error-label">
+              {formikPayout.errors.startTrackingNumber}
+            </div>
+          )}
+        {formikPayout.touched.endTrackingNumber &&
+          formikPayout.errors.endTrackingNumber && (
+            <div className="payout-error-label">
+              {formikPayout.errors.endTrackingNumber}
+            </div>
+          )}
+      </div>
+      <button
+        className="payout-submit-button"
+        onClick={() => formikPayout.handleSubmit()}
+      >
+        Send
+      </button>
     </div>
   );
 };
