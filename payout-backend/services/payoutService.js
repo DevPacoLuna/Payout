@@ -100,14 +100,14 @@ const modifyDBExcel = (aiResponse, excelFilePath, trackingNumber, data) => {
 
   const amountCell = `AE${excelRowNumber}`;
   const reasonCell = `AF${excelRowNumber}`;
-  worksheet[amountCell] = { t: "n", v: aiResult.amount };
-  worksheet[reasonCell] = { t: "s", v: aiResult.reason };
+  worksheet[amountCell] = { t: "n", v: Math.abs(aiResult.amount) };
+  worksheet[reasonCell] = { t: "s", v: Math.abs(aiResult.reason) };
 
   xlsx.writeFile(workbook, excelFilePath);
 
   return {
-    approvedBenefit: aiResult.amount,
-    reason: aiResult.reason,
+    approvedBenefit: Math.abs(aiResult.amount),
+    reason: Math.abs(aiResult.reason),
   };
 };
 
@@ -121,7 +121,15 @@ const processDataFromPDFs = async (allPdfTexts, foundRow) => {
   const prompt = `
    You are an expert payout processor and you ONLY respond in JSON format like this: {"amount": <number>, "reason": "<short explanation>"}.
    Given the following Excel row and PDF contents, determine the amount to payout.
-   
+
+  Instructions to follow for the payout calculation:
+  1. The Final Payout Based on Coverage should not exceed the Maximum Benefit specified in the excel data.
+  2. If an item or group of items is classified as Beyond normal wear and tear, no further individual analysis is needed for those items.
+  3. The only charges/transactions taken into account are those that have not been paid or are overdue.
+  4. Only use the charges/transactions that are explicitly stated in the documents, if it is not specified, don't make it up.
+  5. If there are bundled charges/transactions, take it as a whole if the amounts of each are not found.
+  6. Do not retrieve any negative values for the amount.
+
    Excel Row:
    ${excelColumns}
    PDF Contents:
@@ -200,11 +208,11 @@ const performancePayout = (approvedBenefit, trackingNumber) => {
   const foundRow = data.find((row) => row["Tracking Number"] == trackingNumber);
   const originalApprovedBenefit = foundRow["Approved Benefit Amount"];
 
+  // Error relative calculation
   performance = (
-    100 -
     (Math.abs(originalApprovedBenefit - approvedBenefit) /
       originalApprovedBenefit) *
-      100
+    100
   ).toFixed(2);
 
   return {
