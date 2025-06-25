@@ -44,12 +44,26 @@ exports.createPayout = async (body) => {
     const allPdfTexts = await getPDFs(foundRow);
     const completion = await processDataFromPDFs(allPdfTexts, foundRow);
 
-    modifyDBExcel(completion, excelFilePath, trackingNumber, data);
+    const { approvedBenefit } = modifyDBExcel(
+      completion,
+      excelFilePath,
+      trackingNumber,
+      data
+    );
+
+    const { originalApprovedBenefit, performance } = performancePayout(
+      approvedBenefit,
+      trackingNumber
+    );
 
     results.push({
       trackingNumber,
       status: 200,
-      message: "PDF processed successfully, check excel file for payout amount",
+      message: {
+        approvedBenefit,
+        originalApprovedBenefit,
+        performance,
+      },
     });
   }
 
@@ -90,6 +104,11 @@ const modifyDBExcel = (aiResponse, excelFilePath, trackingNumber, data) => {
   worksheet[reasonCell] = { t: "s", v: aiResult.reason };
 
   xlsx.writeFile(workbook, excelFilePath);
+
+  return {
+    approvedBenefit: aiResult.amount,
+    reason: aiResult.reason,
+  };
 };
 
 const processDataFromPDFs = async (allPdfTexts, foundRow) => {
@@ -118,7 +137,6 @@ const processDataFromPDFs = async (allPdfTexts, foundRow) => {
       },
     ],
   });
-  console.log("AI Response:", completion.choices[0].message.content);
 
   return completion.choices[0].message.content;
 };
@@ -166,4 +184,31 @@ const getPDFs = async (foundRow) => {
       error: error.message,
     };
   }
+};
+
+const performancePayout = (approvedBenefit, trackingNumber) => {
+  const excelOriginFilePath = path.join(
+    __dirname,
+    "../db",
+    "OriginalSecurityDepositClaims.xlsx"
+  );
+  const workbook = xlsx.readFile(excelOriginFilePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+  const data = xlsx.utils.sheet_to_json(worksheet);
+
+  const foundRow = data.find((row) => row["Tracking Number"] == trackingNumber);
+  const originalApprovedBenefit = foundRow["Approved Benefit Amount"];
+
+  performance = (
+    100 -
+    (Math.abs(originalApprovedBenefit - approvedBenefit) /
+      originalApprovedBenefit) *
+      100
+  ).toFixed(2);
+
+  return {
+    originalApprovedBenefit,
+    performance,
+  };
 };

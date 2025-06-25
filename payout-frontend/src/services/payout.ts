@@ -5,7 +5,7 @@ export const postPayout = async (data: PayoutForm) => {
   try {
     const response = await axiosService.post("/payouts", data);
 
-    return response.data;
+    return response;
   } catch (error) {
     console.error(error);
   }
