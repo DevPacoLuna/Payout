@@ -148,6 +148,7 @@ export const Payout = () => {
         <button
           className="payout-submit-button"
           onClick={() => formikPayout.handleSubmit()}
+          style={{ backgroundColor: `${loading ? "#DCDC" : "#2b6cb0"}` }}
           disabled={loading}
         >
           {loading ? "Sending..." : "Send"}
