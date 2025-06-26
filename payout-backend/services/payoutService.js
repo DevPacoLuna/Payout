@@ -70,85 +70,6 @@ exports.createPayout = async (body) => {
   return results;
 };
 
-const modifyDBExcel = (aiResponse, excelFilePath, trackingNumber, data) => {
-  const workbook = xlsx.readFile(excelFilePath);
-  const sheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[sheetName];
-
-  let aiResult;
-  try {
-    aiResult = JSON.parse(aiResponse.match(/{[\s\S]*}/)[0]);
-  } catch (err) {
-    return {
-      status: 500,
-      message: "AI response is not valid JSON",
-      error: err.message,
-    };
-  }
-
-  const rowIndex = data.findIndex(
-    (row) => row["Tracking Number"] == trackingNumber
-  );
-  if (rowIndex === -1) {
-    return {
-      status: 404,
-      message: "Tracking number not found in Excel data.",
-    };
-  }
-
-  const excelRowNumber = rowIndex + 2;
-
-  const amountCell = `AE${excelRowNumber}`;
-  const reasonCell = `AF${excelRowNumber}`;
-  worksheet[amountCell] = { t: "n", v: Math.abs(aiResult.amount) };
-  worksheet[reasonCell] = { t: "s", v: Math.abs(aiResult.reason) };
-
-  xlsx.writeFile(workbook, excelFilePath);
-
-  return {
-    approvedBenefit: Math.abs(aiResult.amount),
-    reason: Math.abs(aiResult.reason),
-  };
-};
-
-const processDataFromPDFs = async (allPdfTexts, foundRow) => {
-  const pdfContents = allPdfTexts
-    .map(({ file, text }) => `File: ${file}\n${text}`)
-    .join("\n\n");
-  const excelColumns = Object.entries(foundRow)
-    .map(([key, value]) => `${key}: ${value}`)
-    .join("\n");
-  const prompt = `
-   You are an expert payout processor and you ONLY respond in JSON format like this: {"amount": <number>, "reason": "<short explanation>"}.
-   Given the following Excel row and PDF contents, determine the amount to payout.
-
-  Instructions to follow for the payout calculation:
-  1. The Final Payout Based on Coverage should not exceed the Maximum Benefit specified in the excel data.
-  2. If an item or group of items is classified as Beyond normal wear and tear, no further individual analysis is needed for those items.
-  3. The only charges/transactions taken into account are those that have not been paid or are overdue.
-  4. Only use the charges/transactions that are explicitly stated in the documents, if it is not specified, don't make it up.
-  5. If there are bundled charges/transactions, take it as a whole if the amounts of each are not found.
-  6. Do not retrieve any negative values for the amount.
-
-   Excel Row:
-   ${excelColumns}
-   PDF Contents:
-   ${pdfContents}
-   `;
-  const completion = await mistral.chat.complete({
-    model: "mistral-large-latest",
-    max_tokens: 1024,
-    messages: [
-      {
-        role: "user",
-        content: prompt,
-      },
-    ],
-  });
-
-  return completion.choices[0].message.content;
-};
-
 const getPDFs = async (foundRow) => {
   const pdfFolderPath = path.join(
     __dirname,
@@ -192,6 +113,85 @@ const getPDFs = async (foundRow) => {
       error: error.message,
     };
   }
+};
+
+const processDataFromPDFs = async (allPdfTexts, foundRow) => {
+  const pdfContents = allPdfTexts
+    .map(({ file, text }) => `File: ${file}\n${text}`)
+    .join("\n\n");
+  const excelColumns = Object.entries(foundRow)
+    .map(([key, value]) => `${key}: ${value}`)
+    .join("\n");
+  const prompt = `
+   You are an expert payout processor and you ONLY and ALWAYS respond in JSON format like this: {"amount": <number>, "reason": "<short explanation>"}.
+   Given the following Excel row and PDF contents, determine the amount to payout.
+
+  Instructions to follow for the payout calculation:
+  1. The Final Payout Based on Coverage should not exceed the Maximum Benefit specified in the excel data.
+  2. If an item or group of items is classified as Beyond normal wear and tear, no further individual analysis is needed for those items.
+  3. The only charges/transactions taken into account are those that have not been paid or are overdue.
+  4. Only use the charges/transactions that are explicitly stated in the documents, if it is not specified, don't make it up.
+  5. If there are bundled charges/transactions, take it as a whole if the amounts of each are not found.
+  6. Do not retrieve any negative values for the amount.
+
+   Excel Row:
+   ${excelColumns}
+   PDF Contents:
+   ${pdfContents}
+   `;
+  const completion = await mistral.chat.complete({
+    model: "mistral-large-latest",
+    max_tokens: 1024,
+    messages: [
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  });
+
+  return completion.choices[0].message.content;
+};
+
+const modifyDBExcel = (aiResponse, excelFilePath, trackingNumber, data) => {
+  const workbook = xlsx.readFile(excelFilePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+
+  let aiResult;
+  try {
+    aiResult = JSON.parse(aiResponse.match(/{[\s\S]*}/)[0]);
+  } catch (err) {
+    return {
+      status: 500,
+      message: "AI response is not valid JSON",
+      error: err.message,
+    };
+  }
+
+  const rowIndex = data.findIndex(
+    (row) => row["Tracking Number"] == trackingNumber
+  );
+  if (rowIndex === -1) {
+    return {
+      status: 404,
+      message: "Tracking number not found in Excel data.",
+    };
+  }
+
+  const excelRowNumber = rowIndex + 2;
+
+  const amountCell = `AE${excelRowNumber}`;
+  const reasonCell = `AF${excelRowNumber}`;
+  worksheet[amountCell] = { t: "n", v: Math.abs(aiResult.amount ?? "0") };
+  worksheet[reasonCell] = { t: "s", v: Math.abs(aiResult.reason ?? "0") };
+
+  xlsx.writeFile(workbook, excelFilePath);
+
+  return {
+    approvedBenefit: Math.abs(aiResult.amount ?? "0"),
+    reason: Math.abs(aiResult.reason ?? "0"),
+  };
 };
 
 const performancePayout = (approvedBenefit, trackingNumber) => {
