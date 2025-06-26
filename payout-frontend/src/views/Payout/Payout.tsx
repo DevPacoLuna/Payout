@@ -4,10 +4,25 @@ import { PayoutForm, payoutSchema } from "./form";
 import { postPayout } from "../../services/payout";
 import { useEffect, useState } from "react";
 import { Box, Card, CardContent, Typography } from "@mui/material";
-import { Pie } from "react-chartjs-2";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface ApprovedBenefit {
   trackingNumber: string;
@@ -24,22 +39,10 @@ interface ApprovedBenefit {
 export const Payout = () => {
   const [approvedBenefit, setApprovedBenefit] = useState<ApprovedBenefit[]>([]);
   const [averagePerformance, setAveragePerformance] = useState(0);
-
-  const data = {
-    labels: [
-      `Correct (${averagePerformance}%)`,
-      `Incorrect (${100 - averagePerformance}%)`,
-    ],
-    datasets: [
-      {
-        data: [averagePerformance, 100 - averagePerformance],
-        backgroundColor: ["#4caf50", "#f44336"],
-        borderWidth: 1,
-      },
-    ],
-  };
+  const [loading, setLoading] = useState(false);
 
   const fetchPayouts = async (values: PayoutForm) => {
+    setLoading(true);
     const response = await postPayout(values);
 
     if (response?.status === 201) {
@@ -47,12 +50,29 @@ export const Payout = () => {
     } else {
       alert("Failed to fetch payouts. Please try again.");
     }
+    setLoading(false);
+  };
+
+  const data = {
+    labels: ["MAPE Error"],
+    datasets: [
+      {
+        label: "MAPE (%)",
+        data: [averagePerformance],
+        backgroundColor: ["#1976d2"],
+        borderWidth: 1,
+      },
+    ],
   };
 
   useEffect(() => {
+    // MAPE (Mean Absolute Percentage Error) calculation
     const totalPerformance = approvedBenefit.reduce((acc, benefit) => {
       if (typeof benefit.message === "object") {
-        const performance = parseFloat(benefit.message.performance);
+        const original = Number(benefit.message.originalApprovedBenefit);
+        const approved = Number(benefit.message.approvedBenefit);
+        const performance =
+          original !== 0 ? Math.abs(original - approved) / original : 0;
         if (!isNaN(performance)) {
           return acc + performance;
         }
@@ -65,7 +85,7 @@ export const Payout = () => {
     ).length;
 
     setAveragePerformance(
-      count > 0 ? parseFloat((totalPerformance / count).toFixed(2)) : 0
+      count > 0 ? parseFloat((totalPerformance / count).toFixed(2)) * 100 : 0
     );
   }, [approvedBenefit]);
 
@@ -128,8 +148,9 @@ export const Payout = () => {
         <button
           className="payout-submit-button"
           onClick={() => formikPayout.handleSubmit()}
+          disabled={loading}
         >
-          Send
+          {loading ? "Sending..." : "Send"}
         </button>
       </div>
       {approvedBenefit.map((benefit) => (
@@ -196,8 +217,8 @@ export const Payout = () => {
       ))}
       {approvedBenefit.length > 0 && (
         <Box mt={4} className="payout-average-performance">
-          <Typography variant="h6">Average Performance:</Typography>
-          <Pie className="payout-performance-chart" data={data} />
+          <Typography variant="h6">MAPE Error:</Typography>
+          <Bar className="payout-performance-chart" data={data} />
         </Box>
       )}
     </>
